@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/gorilla/mux"
 	"gokusyon/github.com/products-api/handlers"
 	"log"
 	"net/http"
@@ -14,14 +15,22 @@ func main() {
 
 	log := log.New(os.Stdout, "products-api ", log.LstdFlags)
 
-	helloHandler := handlers.NewHello(log)
 	pingHandler := handlers.NewPing(log)
-	productHandler := handlers.NewProducts(log)
+	ph := handlers.NewProducts(log)
 
-	sm := http.NewServeMux()
-	sm.Handle("/hello", helloHandler)
+	sm := mux.NewRouter()
 	sm.Handle("/ping", pingHandler)
-	sm.Handle("/", productHandler)
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareProductValidation)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareProductValidation)
 
 	s := &http.Server{
 		Addr:         ":8080",
