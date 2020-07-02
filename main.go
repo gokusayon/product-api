@@ -19,9 +19,9 @@ func main() {
 	productHandler := handlers.NewProducts(log)
 
 	sm := http.NewServeMux()
-	sm.Handle("/", helloHandler)
+	sm.Handle("/hello", helloHandler)
 	sm.Handle("/ping", pingHandler)
-	sm.Handle("/p", productHandler)
+	sm.Handle("/", productHandler)
 
 	s := &http.Server{
 		Addr:         ":8080",
