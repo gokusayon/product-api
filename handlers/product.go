@@ -1,87 +1,49 @@
 package handlers
 
 import (
-	"context"
-	"fmt"
-	"github.com/go-kit/kit/transport/http/jsonrpc"
 	"github.com/gorilla/mux"
-	"gokusyon/github.com/products-api/data"
+	dataimport "gokusyon/github.com/products-api/data"
 	"log"
 	"net/http"
 	"strconv"
 )
 
+// GenericError is a generic error message returned by a server
+type GenericError struct {
+	Message string `json:"message"`
+}
+
+// ValidationError is a collection of validation error messages
+type ValidationError struct {
+	Messages []string `json:"messages"`
+}
+
 type Products struct {
 	log *log.Logger
+	validate *dataimport.Validation
 }
 
-func NewProducts(log *log.Logger) *Products {
-	return &Products{log}
-}
-
-func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle GET Products")
-	lp := dataimport.GetProducts()
-	rw.Header().Add("Content-Type", jsonrpc.ContentType)
-	err := lp.ToJSON(rw)
-	if err != nil {
-		http.Error(rw, "Unable to Encode Products", http.StatusInternalServerError)
-	}
-}
-
-func (p *Products) AddProduct(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle POST Products")
-	prod := r.Context().Value(KeyProduct{}).(dataimport.Product)
-	dataimport.AddProduct(&prod)
-}
-
-func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle Put Products")
-
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err!= nil{
-		http.Error(rw, "Unable to convert into number", http.StatusBadRequest)
-	}
-
-	prod := r.Context().Value(KeyProduct{}).(dataimport.Product)
-	err = dataimport.UpdateProduct(id, &prod)
-	if err == dataimport.ErrorProductNotFound{
-		http.Error(rw, "Product not found" , http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		http.Error(rw, "Unable to update products" , http.StatusInternalServerError)
-		return
-	}
+func NewProducts(log *log.Logger, v *dataimport.Validation) *Products {
+	return &Products{log, v}
 }
 
 type KeyProduct struct {}
 
-func (p Products) MiddlewareProductValidation(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		prod := dataimport.Product{}
-		err := prod.FromJson(r.Body)
-		if err != nil{
-			http.Error(rw, "", http.StatusBadRequest)
-			return
-		}
+// getProductID returns the product ID from the URL
+// Panics if cannot convert the id into an integer
+// this should never happen as the router ensures that
+// this is a valid number
+func getProductID(r *http.Request) int {
+	// parse the product id from the url
+	vars := mux.Vars(r)
 
-		// Validate the product
-		err = prod.Validate()
-		if err != nil{
-			p.log.Println("[ERROR] validating product", err)
-			http.Error(
-				rw,
-				fmt.Sprintf("Error validating Product: %s", err),
-				http.StatusBadRequest)
-			return
-		}
+	// convert the id into an integer and return
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		// should never happen
+		panic(err)
+	}
 
-		ctx := context.WithValue(r.Context(), KeyProduct{}, prod)
-		req := r.WithContext(ctx)
-
-		next.ServeHTTP(rw, req)
-	})
+	return id
 }
+

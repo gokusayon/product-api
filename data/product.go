@@ -1,57 +1,58 @@
 package dataimport
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/go-playground/validator"
-	"io"
-	"regexp"
 	"time"
 )
 
 // Product defines the structure for an API product
+// swagger:model
 type Product struct {
+	// the ID of the product
+	//
+	// required: true
+	// min: 1
 	ID          int     `json:"id"`
+
+	// the Name of the Product
+	//
+	// required: true
+	// max length: 25
 	Name        string  `json:"name" validate:"required"`
+
+
+	// the Description of the Product
+	//
+	// required: false
+	// max length: 10000
 	Description string  `json:"description"`
+
+	// the price for the product
+	//
+	// required: true
+	// min: 0.01
 	Price       float32 `json:"price" validate:"gt=0"`
+
+	// the SKU for the product
+	//
+	// required: true
+	// pattern: [a-z]+-[a-z]+-[a-z]+
 	SKU         string  `json:"sku" validate:"sku"`
+
 	CreatedOn   string  `json:"-"`
 	UpdatedOn   string  `json:"-"`
 	DeletedOn   string  `json:"-"`
 }
 
-func (p * Product) FromJson(reader io.Reader) error  {
-	e := json.NewDecoder(reader)
-	return e.Decode(p)
-}
+//func (p *Product) Validate() error{
+//	validate := validator.New()
+//	validate.RegisterValidation("sku", validateSKU)
+//	return validate.Struct(p)
+//}
 
-func (p *Product) Validate() error{
-	validate := validator.New()
-	validate.RegisterValidation("sku", validateSKU)
-	return validate.Struct(p)
-}
-
-// fomat : abc-asdf-asdfs
-func validateSKU(f validator.FieldLevel) bool{
-
-	re := regexp.MustCompile(`[a-z+]-[a-z]+-[a-z]`)
-	matches := re.FindAllString(f.Field().String(), -1)
-
-	if len(matches) != 1{
-		return false
-	}
-
-	return true
-}
 
 // Products is a collection of Product
 type Products []*Product
-
-func (p *Products) ToJSON(w io.Writer) error {
-	e := json.NewEncoder(w)
-	return e.Encode(p)
-}
 
 func GetProducts() Products {
 	return productList
@@ -87,9 +88,29 @@ func findNextProduct(id int) (*Product , int, error){
 	return nil, -1,  ErrorProductNotFound
 }
 
+func DeleteProduct(id int) (error){
+	_, i, err := findNextProduct(id)
+
+	if err != nil {
+		return err
+	}
+
+	productList = append(productList[:i], productList[i+1:]...)
+	return nil
+}
+
 func getNextID() int{
 	lp := productList[len(productList) -1]
 	return lp.ID + 1
+}
+
+func GetProductByID(id int) (*Product, error){
+	pd, _, err := findNextProduct(id)
+
+	if err != nil {
+		return nil, err
+	}
+	return pd, nil
 }
 
 // productList is a hard coded list of products for this
