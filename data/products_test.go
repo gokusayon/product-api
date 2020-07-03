@@ -1,6 +1,8 @@
 package dataimport
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCheckValidation(t *testing.T){
 	p := &Product{
@@ -9,7 +11,8 @@ func TestCheckValidation(t *testing.T){
 		SKU: "abs-sadf-a",
 	}
 
-	err := p.Validate()
+	validate := NewValidation()
+	err := validate.Validate(p)
 	if err != nil{
 		t.Fatal(err)
 	}
