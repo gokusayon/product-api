@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	// protos "github.com/gokusayon/currency/protos/currency"
-	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
+
+	dataimport "github.com/gokusayon/products-api/data"
 )
 
 // swagger:route GET /products products listProducts
@@ -13,11 +13,22 @@ import (
 
 // GetProducts returns the products from datastore
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle GET Products")
-	lp := dataimport.GetProducts()
-	err := dataimport.ToJson(lp, rw)
+	p.log.Debug("Handle GET All Products")
+
+	cur := r.URL.Query().Get("currency")
+
+	lp, err := p.productsDB.GetProducts(cur)
+
 	if err != nil {
-		http.Error(rw, "Unable to Encode Products", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusInternalServerError)
+		dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
+		return
+	}
+
+	// lp := dataimport.GetProducts()
+	err = dataimport.ToJSON(lp, rw)
+	if err != nil {
+		p.log.Error("Unable to Encode Products")
 	}
 }
 
@@ -29,37 +40,33 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 
 // ListSingle returns a products based on ID from database
 func (p *Products) ListSingle(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle GET Product By ID")
-	id := getProductID(r)
+	p.log.Debug("Handle GET Product By ID")
 
-	prod, err := dataimport.GetProductByID(id)
+	id := getProductID(r)
+	cur := r.URL.Query().Get("currency")
+
+	prod, err := p.productsDB.GetProductByID(id, cur)
 
 	switch err {
 	case nil:
 
 	case dataimport.ErrorProductNotFound:
-		p.log.Println("[ERROR] fetching product", err)
+		p.log.Error("Unable to find product", "id", id)
 
 		rw.WriteHeader(http.StatusNotFound)
-		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	default:
-		p.log.Println("[ERROR] fetching product", err)
+		p.log.Error("Unable to find product", "id", id)
 
 		rw.WriteHeader(http.StatusInternalServerError)
-		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 
-	// get exchange rate
-	// rr := &protos.RateRequest{
-	// 	Base: proto
-	// }
-	// p.cc.GetRate(context.Background())
-
-	err = dataimport.ToJson(prod, rw)
+	err = dataimport.ToJSON(prod, rw)
 	if err != nil {
 		// we should never be here but log the error just incase
-		p.log.Println("[ERROR] serializing product", err)
+		p.log.Error("[ERROR] serializing product", err)
 	}
 }

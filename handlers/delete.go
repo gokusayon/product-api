@@ -14,26 +14,26 @@ import (
 
 // DeleteProducts deletes a product from datastore
 func (p *Products) DeleteProducts(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle DELETE Products")
+	p.log.Debug("Handle DELETE Products")
 
 	id := getProductID(r)
 
-	p.log.Println("[DEBUG] deleting record id", id)
+	p.log.Debug("Deleting record", "id", id)
 
-	err := dataimport.DeleteProduct(id)
-	if err == dataimport.ErrorProductNotFound{
-		p.log.Println("[ERROR] deleting record id does not exist")
+	err := p.productsDB.DeleteProduct(id)
+	if err == dataimport.ErrorProductNotFound {
+		p.log.Error("Unable to delete record. Id does not exist")
 
 		rw.WriteHeader(http.StatusNotFound)
-		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 
 	if err != nil {
-		p.log.Println("[ERROR] deleting record", err)
+		p.log.Error("Unable to delete record. Id does not exist")
 
 		rw.WriteHeader(http.StatusInternalServerError)
-		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 

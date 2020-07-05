@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	protos "github.com/gokusayon/currency/protos/currency"
 	dataimport "github.com/gokusayon/products-api/data"
 	"github.com/gorilla/mux"
-	"log"
+	"github.com/hashicorp/go-hclog"
 	"net/http"
 	"strconv"
 )
@@ -21,14 +20,14 @@ type ValidationError struct {
 
 // Products handler for getting and updating products
 type Products struct {
-	log      *log.Logger
-	validate *dataimport.Validation
-	cc       protos.CurrencyClient
+	log        hclog.Logger
+	validate   *dataimport.Validation
+	productsDB *dataimport.ProductsDB
 }
 
 // NewProducts returns a @Products handler
-func NewProducts(log *log.Logger, v *dataimport.Validation, cc protos.CurrencyClient) *Products {
-	return &Products{log, v, cc}
+func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB) *Products {
+	return &Products{log, v, productsDB}
 }
 
 // A KeyProduct used for product object in context

@@ -2,45 +2,59 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"runtime"
+	"time"
+
 	"github.com/go-openapi/runtime/middleware"
 	protos "github.com/gokusayon/currency/protos/currency"
 	dataimport "github.com/gokusayon/products-api/data"
 	"github.com/gokusayon/products-api/handlers"
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
 )
 
 func main() {
 
-	log := log.New(os.Stdout, "products-api ", log.LstdFlags)
+	log := hclog.Default()
+	log.SetLevel(hclog.Trace)
+
+	log.Info(runtime.GOOS)
+
 	v := dataimport.NewValidation()
 
 	// Add grpc client
-	conn, err := grpc.Dial("localhost:9092", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:8082", grpc.WithInsecure())
 
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
+	// replace github.com/gokusayon/currency => ../currency
 
 	cc := protos.NewCurrencyClient(conn)
+	productsDB := dataimport.NewProductsDB(log, cc)
 
 	// Create the handlers
-	ph := handlers.NewProducts(log, v, cc)
+	ph := handlers.NewProducts(log, v, productsDB)
 
 	// Create a new subrouter for add prefic and adding filter for response type
 	router := mux.NewRouter()
-	sm := router.PathPrefix("/products").Subrouter()
+
+	swaggerRouter := router.NewRoute().Subrouter()
+
+	sm := swaggerRouter.PathPrefix("/products").Subrouter()
 	sm.Use(ph.MiddlewareContentType)
 
 	// Handle routes
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("", ph.GetProducts).Queries("currency", "{[A-Z]{3}}")
 	getRouter.HandleFunc("", ph.GetProducts)
+
+	getRouter.HandleFunc("/{id:[0-9]+}", ph.ListSingle).Queries("currency", "{[A-Z]{3}}")
 	getRouter.HandleFunc("/{id:[0-9]+}", ph.ListSingle)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
@@ -56,22 +70,22 @@ func main() {
 
 	ops := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
 	sh := middleware.Redoc(ops, nil)
-	getRouter.Handle("/docs", sh)
-	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
+	swaggerRouter.Handle("/docs", sh)
+	swaggerRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 
 	s := &http.Server{
 		Addr:         ":8080",
-		Handler:      sm,
+		Handler:      router,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 	}
 
 	go func() {
-		log.Println("Starting Server")
+		log.Debug("Starting Server")
 		err := s.ListenAndServe()
 		if err != nil {
-			log.Fatal(err)
+			log.Error("Unable to start server", "err", err)
 		}
 	}()
 
@@ -80,7 +94,7 @@ func main() {
 	signal.Notify(sigChanel, os.Interrupt)
 
 	sig := <-sigChanel
-	log.Println("Recieved Signal for shutdown. Shutting down gracefully ...", sig)
+	log.Debug("Recieved Signal for shutdown. Shutting down gracefully ...", sig)
 
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	s.Shutdown(tc)

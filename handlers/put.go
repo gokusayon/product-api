@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"github.com/gorilla/mux"
-	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
-	"strconv"
+
+	dataimport "github.com/gokusayon/products-api/data"
 )
 
 // swagger:route PUT /products/{id} products updateProduct
@@ -16,25 +15,20 @@ import (
 
 // UpdateProducts updates a existing product in the datastore
 func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle PUT Products")
+	p.log.Debug("Handle PUT Products")
 
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err!= nil{
-		http.Error(rw, "Unable to convert into number", http.StatusBadRequest)
-	}
-	p.log.Println("[DEBUG] updating record id", id)
+	id := getProductID(r)
 
 	prod := r.Context().Value(KeyProduct{}).(dataimport.Product)
-	err = dataimport.UpdateProduct(id, &prod)
-	if err == dataimport.ErrorProductNotFound{
-		http.Error(rw, "Product not found" , http.StatusNotFound)
+	err := p.productsDB.UpdateProduct(id, prod)
+
+	if err == dataimport.ErrorProductNotFound {
+		p.log.Error("Unable to find product", "id", id)
+
+		rw.WriteHeader(http.StatusNotFound)
+		dataimport.ToJSON(&GenericError{Message: "Product not found in database"}, rw)
 		return
 	}
 
-	if err != nil {
-		http.Error(rw, "Unable to update products" , http.StatusInternalServerError)
-		return
-	}
+	rw.WriteHeader(http.StatusNoContent)
 }
-

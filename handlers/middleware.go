@@ -2,30 +2,32 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/go-kit/kit/transport/http/jsonrpc"
 	dataimport "github.com/gokusayon/products-api/data"
-	"net/http"
 )
 
 func (p *Products) MiddlewareProductValidation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		p.log.Debug("Inside Middleware")
 		prod := dataimport.Product{}
-		err := dataimport.FromJson(&prod, r.Body)
-		if err != nil{
-			p.log.Println("[ERROR] deserializing product", err)
+		err := dataimport.FromJSON(&prod, r.Body)
+		if err != nil {
+			p.log.Error("Unable to deserialize product")
 			rw.WriteHeader(http.StatusBadRequest)
-			dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+			dataimport.ToJSON(&GenericError{Message: err.Error()}, rw)
 			return
 		}
 
 		// Validate the product
 		errs := p.validate.Validate(prod)
 		if len(errs) != 0 {
-			p.log.Println("[ERROR] validating product", errs)
+			p.log.Error("Unable to validate product")
 
 			// return the validation messages as an array
 			rw.WriteHeader(http.StatusUnprocessableEntity)
-			dataimport.ToJson(&ValidationError{Messages: errs.Errors()}, rw)
+			dataimport.ToJSON(&ValidationError{Messages: errs.Errors()}, rw)
 			return
 		}
 
@@ -37,11 +39,9 @@ func (p *Products) MiddlewareProductValidation(next http.Handler) http.Handler {
 	})
 }
 
-
 func (p *Products) MiddlewareContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", jsonrpc.ContentType)
 		next.ServeHTTP(rw, r)
 	})
 }
-
