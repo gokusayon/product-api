@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	dataimport "gokusyon/github.com/products-api/data"
+	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
 )
 // swagger:route POST /products products addProduct

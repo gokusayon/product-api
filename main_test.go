@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"gokusyon/github.com/products-api/sdk/client"
-	"gokusyon/github.com/products-api/sdk/client/products"
+	"github.com/gokusayon/products-api/sdk/client"
+	"github.com/gokusayon/products-api/sdk/client/products"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func TestClientListProducts(t *testing.T) {
 	c := client.NewHTTPClientWithConfig(nil, cfg)
 	params := products.NewListProductsParams()
 	prod, err := c.Products.ListProducts(params)
-	if err != nil{
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -25,7 +25,7 @@ func TestClientSingleProduct(t *testing.T) {
 
 	param := products.NewListSingleProductParams().WithID(1)
 	prod, err := c.Products.ListSingleProduct(param)
-	if err != nil{
+	if err != nil {
 		t.Fatal(err)
 	}
 

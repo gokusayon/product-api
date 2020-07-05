@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/go-kit/kit/transport/http/jsonrpc"
-	dataimport "gokusyon/github.com/products-api/data"
+	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
 )
 

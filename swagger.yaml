@@ -9,7 +9,7 @@ definitions:
         type: string
         x-go-name: Message
     type: object
-    x-go-package: gokusyon/github.com/products-api/handlers
+    x-go-package: github.com/gokusayon/products-api/handlers
   Product:
     description: Product defines the structure for an API product
     properties:
@@ -46,7 +46,7 @@ definitions:
     - price
     - sku
     type: object
-    x-go-package: gokusyon/github.com/products-api/data
+    x-go-package: github.com/gokusayon/products-api/data
   ValidationError:
     description: ValidationError is a collection of validation error messages
     properties:
@@ -56,7 +56,7 @@ definitions:
         type: array
         x-go-name: Messages
     type: object
-    x-go-package: gokusyon/github.com/products-api/handlers
+    x-go-package: github.com/gokusayon/products-api/handlers
 info:
   description: Documentation for Product API
   title: for Product API

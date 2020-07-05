@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	dataimport "gokusyon/github.com/products-api/data"
+	// protos "github.com/gokusayon/currency/protos/currency"
+	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
 )
 
@@ -20,14 +21,13 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // swagger:route GET /products/{id} products listSingleProduct
 // Returns a product from list of products
 // responses:
 //	200: productResponse
 //	404: errorResponse
 
-// GetSingleProductById returns a products based on ID from database
+// ListSingle returns a products based on ID from database
 func (p *Products) ListSingle(rw http.ResponseWriter, r *http.Request) {
 	p.log.Println("Handle GET Product By ID")
 	id := getProductID(r)
@@ -35,21 +35,27 @@ func (p *Products) ListSingle(rw http.ResponseWriter, r *http.Request) {
 	prod, err := dataimport.GetProductByID(id)
 
 	switch err {
-		case nil:
+	case nil:
 
-		case dataimport.ErrorProductNotFound:
-			p.log.Println("[ERROR] fetching product", err)
+	case dataimport.ErrorProductNotFound:
+		p.log.Println("[ERROR] fetching product", err)
 
-			rw.WriteHeader(http.StatusNotFound)
-			dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
-			return
-		default:
-			p.log.Println("[ERROR] fetching product", err)
+		rw.WriteHeader(http.StatusNotFound)
+		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		return
+	default:
+		p.log.Println("[ERROR] fetching product", err)
 
-			rw.WriteHeader(http.StatusInternalServerError)
-			dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
-			return
+		rw.WriteHeader(http.StatusInternalServerError)
+		dataimport.ToJson(&GenericError{Message: err.Error()}, rw)
+		return
 	}
+
+	// get exchange rate
+	// rr := &protos.RateRequest{
+	// 	Base: proto
+	// }
+	// p.cc.GetRate(context.Background())
 
 	err = dataimport.ToJson(prod, rw)
 	if err != nil {

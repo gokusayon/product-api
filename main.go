@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"github.com/go-openapi/runtime/middleware"
+	protos "github.com/gokusayon/currency/protos/currency"
+	dataimport "github.com/gokusayon/products-api/data"
+	"github.com/gokusayon/products-api/handlers"
 	"github.com/gorilla/mux"
-	dataimport "gokusyon/github.com/products-api/data"
-	"gokusyon/github.com/products-api/handlers"
+	"google.golang.org/grpc"
 	"log"
 	"net/http"
 	"os"
@@ -18,12 +20,25 @@ func main() {
 	log := log.New(os.Stdout, "products-api ", log.LstdFlags)
 	v := dataimport.NewValidation()
 
-	ph := handlers.NewProducts(log, v)
+	// Add grpc client
+	conn, err := grpc.Dial("localhost:9092", grpc.WithInsecure())
 
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	cc := protos.NewCurrencyClient(conn)
+
+	// Create the handlers
+	ph := handlers.NewProducts(log, v, cc)
+
+	// Create a new subrouter for add prefic and adding filter for response type
 	router := mux.NewRouter()
 	sm := router.PathPrefix("/products").Subrouter()
 	sm.Use(ph.MiddlewareContentType)
 
+	// Handle routes
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("", ph.GetProducts)
 	getRouter.HandleFunc("/{id:[0-9]+}", ph.ListSingle)

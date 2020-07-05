@@ -14,7 +14,7 @@
 // swagger:meta
 package handlers
 
-import dataimport "gokusyon/github.com/products-api/data"
+import dataimport "github.com/gokusayon/products-api/data"
 
 // A list of products returns in response
 // swagger:response productsResponse

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gorilla/mux"
-	dataimport "gokusyon/github.com/products-api/data"
+	dataimport "github.com/gokusayon/products-api/data"
 	"net/http"
 	"strconv"
 )

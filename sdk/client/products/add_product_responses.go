@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
-	"gokusyon/github.com/products-api/sdk/models"
+	"github.com/gokusayon/products-api/sdk/models"
 )
 
 // AddProductReader is a Reader for the AddProduct structure.
