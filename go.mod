@@ -12,7 +12,7 @@ require (
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gokusayon/currency v0.0.0-00010101000000-000000000000
-	github.com/gorilla/handlers v1.4.2 // indirect
+	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/leodido/go-urn v1.2.0 // indirect

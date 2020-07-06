@@ -7,6 +7,8 @@ import (
 
 	protos "github.com/gokusayon/currency/protos/currency"
 	"github.com/hashicorp/go-hclog"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Product defines the structure for an API product
@@ -162,12 +164,28 @@ func (p *ProductsDB) getRate(destination string) (float64, error) {
 	resp, err := p.currency.GetRate(context.Background(), &rr)
 
 	if err != nil {
-		p.log.Error("Unable to get currency rates", "currency", destination, "err", err)
-		return 0, err
+
+		grpcError, ok := status.FromError(err)
+		if !ok {
+			return -1, err
+		}
+
+		if grpcError.Code() == codes.InvalidArgument {
+			return -1, fmt.Errorf("Unable to retrieve exchange rate from grpc server: %s", grpcError.Message())
+		}
+
+		return -1, err
 	}
 
+	// Update rates
+	p.rates[destination] = resp.Rate
+
 	// Subscribe for updates
-	p.client.Send(&rr)
+	err = p.client.Send(&rr)
+
+	if err != nil {
+		return -1, err
+	}
 
 	return resp.Rate, nil
 }
