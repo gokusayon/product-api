@@ -81,15 +81,24 @@ func (p *ProductsDB) handleUpdates() {
 
 		p.log.Info("Listening for updates ...")
 		for {
-			rr, err := p.client.Recv()
-			p.log.Info("Recived Update for", "destination", rr.GetDestination(), "rate", rr.GetRate())
+			srr, err := p.client.Recv()
 
-			if err != nil {
-				p.log.Error("Error while waiting for message", "error", err)
-				return
+			if grpcError := srr.GetError(); grpcError != nil {
+				p.log.Error("Error subscribing to the service", "error", srr)
+				continue
 			}
 
-			p.rates[rr.GetDestination().String()] = rr.Rate
+			if resp := srr.GetMessage(); resp != nil {
+				rr := srr.GetRateResponse()
+				p.log.Info("Recived Update for", "destination", rr.GetDestination(), "rate", rr.GetRate())
+
+				if err != nil {
+					p.log.Error("Error while waiting for message", "error", err)
+					return
+				}
+
+				p.rates[rr.GetDestination().String()] = rr.Rate
+			}
 
 		}
 	}()
@@ -151,9 +160,9 @@ func (p *ProductsDB) GetProductByID(id int, destination string) (*Product, error
 func (p *ProductsDB) getRate(destination string) (float64, error) {
 
 	// check cache
-	if r, ok := p.rates[destination]; ok {
-		return r, nil
-	}
+	// if r, ok := p.rates[destination]; ok {
+	// 	return r, nil
+	// }
 
 	// Get initial rate
 	rr := protos.RateRequest{
