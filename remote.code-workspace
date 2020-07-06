@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "workbooks"
+		},
+		{
+			"path": "app"
+		}
+	],
+	"remoteAuthority": "wsl+CustomUbuntu"
+}

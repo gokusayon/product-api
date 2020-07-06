@@ -86,13 +86,7 @@ class PythonObjectLibrary:
                      'index' : index
             })
         
-        URL = str()
-        
-        if bool(reqUrl):
-            URL = reqUrl
-        else:        
-            URL = "http://localhost:5000/listing/update"
-            
+        URL = "http://localhost:5000/listing/update"
 
         self.update_values_async(URL, data)        
         return URL
@@ -108,5 +102,8 @@ class PythonObjectLibrary:
         async_task.start()
         return 
 if __name__ == '__main__':
+    # logger.info("Staring main")
+    print("main")
+
     import win32com.server.register
     win32com.server.register.UseCommandLine(PythonObjectLibrary)
