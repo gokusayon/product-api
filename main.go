@@ -2,30 +2,60 @@ package main
 
 import (
 	"context"
-	"github.com/go-openapi/runtime/middleware"
-	"github.com/gorilla/mux"
-	dataimport "gokusyon/github.com/products-api/data"
-	"gokusyon/github.com/products-api/handlers"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
+
+	"github.com/go-openapi/runtime/middleware"
+	protos "github.com/gokusayon/currency/protos/currency"
+	data "github.com/gokusayon/products-api/data"
+	"github.com/gokusayon/products-api/handlers"
+	goHandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-hclog"
+	"google.golang.org/grpc"
 )
 
 func main() {
 
-	log := log.New(os.Stdout, "products-api ", log.LstdFlags)
-	v := dataimport.NewValidation()
+	log := hclog.Default()
+	log.SetLevel(hclog.Trace)
 
-	ph := handlers.NewProducts(log, v)
+	log.Info(runtime.GOOS)
 
+	v := data.NewValidation()
+
+	// Add grpc client
+	conn, err := grpc.Dial("localhost:8082", grpc.WithInsecure())
+
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	cc := protos.NewCurrencyClient(conn)
+	productsDB := data.NewProductsDB(log, cc)
+
+	// Create the handlers
+	ph := handlers.NewProducts(log, v, productsDB)
+
+	// Create a new subrouter for add prefic and adding filter for response type
 	router := mux.NewRouter()
-	sm := router.PathPrefix("/products").Subrouter()
+
+	swaggerRouter := router.NewRoute().Subrouter()
+
+	sm := swaggerRouter.PathPrefix("/products").Subrouter()
 	sm.Use(ph.MiddlewareContentType)
 
+	// Handle routes
+	log.Info("Registering routes")
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("", ph.GetProducts).Queries("currency", "{[A-Z]{3}}")
 	getRouter.HandleFunc("", ph.GetProducts)
+
+	getRouter.HandleFunc("/{id:[0-9]+}", ph.ListSingle).Queries("currency", "{[A-Z]{3}}")
 	getRouter.HandleFunc("/{id:[0-9]+}", ph.ListSingle)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
@@ -39,24 +69,29 @@ func main() {
 	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.HandleFunc("/{id:[0-9]+}", ph.DeleteProducts)
 
+	log.Info("Registering swagger ..")
 	ops := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
 	sh := middleware.Redoc(ops, nil)
-	getRouter.Handle("/docs", sh)
-	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
+	swaggerRouter.Handle("/docs", sh)
+	swaggerRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
+
+	// CORS
+	ch := goHandlers.CORS(goHandlers.AllowedOrigins([]string{"*"}))
 
 	s := &http.Server{
-		Addr:         ":8080",
-		Handler:      sm,
+		Addr:         "localhost:8080",
+		Handler:      ch(router),
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
+		ErrorLog:     log.StandardLogger(&hclog.StandardLoggerOptions{}), // set the logger for the server
 	}
 
 	go func() {
-		log.Println("Starting Server")
+		log.Debug("Starting Server")
 		err := s.ListenAndServe()
 		if err != nil {
-			log.Fatal(err)
+			log.Error("Unable to start server", "err", err)
 		}
 	}()
 
@@ -65,7 +100,7 @@ func main() {
 	signal.Notify(sigChanel, os.Interrupt)
 
 	sig := <-sigChanel
-	log.Println("Recieved Signal for shutdown. Shutting down gracefully ...", sig)
+	log.Debug("Recieved Signal for shutdown. Shutting down gracefully ...", "sig", sig)
 
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	s.Shutdown(tc)

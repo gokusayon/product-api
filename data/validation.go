@@ -5,14 +5,14 @@ import (
 	"github.com/go-playground/validator"
 	"regexp"
 )
+
 // ValidationError wraps the validators FieldError so we do not
 // expose this to out code
 type ValidationError struct {
 	validator.FieldError
 }
 
-
-func (v *ValidationError) Error() string{
+func (v *ValidationError) Error() string {
 	return fmt.Sprintf(
 		"Key: '%s' Error: Feild validation for '%s' failed on '%s' tag",
 		v.Namespace(),
@@ -33,18 +33,19 @@ func (v ValidationErrors) Errors() []string {
 	return errs
 }
 
-
 // Validation contains
 type Validation struct {
 	validate *validator.Validate
 }
 
-func NewValidation() *Validation{
+// NewValidation returns a Validation handler
+func NewValidation() *Validation {
 	validate := validator.New()
 	validate.RegisterValidation("sku", validateSKU)
 	return &Validation{validate}
 }
 
+// Validate return ValidationErrors for a given structure
 func (v *Validation) Validate(i interface{}) ValidationErrors {
 	valErr := v.validate.Struct(i)
 
@@ -65,12 +66,12 @@ func (v *Validation) Validate(i interface{}) ValidationErrors {
 }
 
 // fomat : abc-asdf-asdfs
-func validateSKU(f validator.FieldLevel) bool{
+func validateSKU(f validator.FieldLevel) bool {
 
 	re := regexp.MustCompile(`[a-z+]-[a-z]+-[a-z]`)
 	matches := re.FindAllString(f.Field().String(), -1)
 
-	if len(matches) != 1{
+	if len(matches) != 1 {
 		return false
 	}
 

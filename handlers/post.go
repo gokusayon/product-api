@@ -1,9 +1,11 @@
 package handlers
 
 import (
-	dataimport "gokusyon/github.com/products-api/data"
 	"net/http"
+
+	dataimport "github.com/gokusayon/products-api/data"
 )
+
 // swagger:route POST /products products addProduct
 // Adds a product to the list of products
 // responses:
@@ -11,9 +13,9 @@ import (
 //	422: errorValidation
 //	501: errorResponse
 
-// AddProducts returns the products from datastore
+// AddProduct returns the products from datastore
 func (p *Products) AddProduct(rw http.ResponseWriter, r *http.Request) {
-	p.log.Println("Handle POST Products")
+	p.log.Debug("Handle POST Products")
 	prod := r.Context().Value(KeyProduct{}).(dataimport.Product)
-	dataimport.AddProduct(&prod)
+	p.productsDB.AddProduct(prod)
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
-	"gokusyon/github.com/products-api/sdk/models"
+	"github.com/gokusayon/products-api/sdk/models"
 )
 
 // UpdateProductReader is a Reader for the UpdateProduct structure.
@@ -54,7 +54,7 @@ func NewUpdateProductCreated() *UpdateProductCreated {
 
 /*UpdateProductCreated handles this case with default header values.
 
-No content is returned by this API endpoint
+ProductsNoContent No content is returned by this API endpoint
 */
 type UpdateProductCreated struct {
 }

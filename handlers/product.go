@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	dataimport "github.com/gokusayon/products-api/data"
 	"github.com/gorilla/mux"
-	dataimport "gokusyon/github.com/products-api/data"
-	"log"
+	"github.com/hashicorp/go-hclog"
 	"net/http"
 	"strconv"
 )
@@ -18,16 +18,20 @@ type ValidationError struct {
 	Messages []string `json:"messages"`
 }
 
+// Products handler for getting and updating products
 type Products struct {
-	log *log.Logger
-	validate *dataimport.Validation
+	log        hclog.Logger
+	validate   *dataimport.Validation
+	productsDB *dataimport.ProductsDB
 }
 
-func NewProducts(log *log.Logger, v *dataimport.Validation) *Products {
-	return &Products{log, v}
+// NewProducts returns a @Products handler
+func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB) *Products {
+	return &Products{log, v, productsDB}
 }
 
-type KeyProduct struct {}
+// A KeyProduct used for product object in context
+type KeyProduct struct{}
 
 // getProductID returns the product ID from the URL
 // Panics if cannot convert the id into an integer
@@ -46,4 +50,3 @@ func getProductID(r *http.Request) int {
 
 	return id
 }
-
