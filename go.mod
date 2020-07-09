@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/leodido/go-urn v1.2.0 // indirect
 	google.golang.org/grpc v1.30.0
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 )
 
 replace github.com/gokusayon/currency => ../currency
