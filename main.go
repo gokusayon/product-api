@@ -18,17 +18,27 @@ import (
 	"google.golang.org/grpc"
 )
 
+func getEnv() string {
+	if env := os.Getenv("APP_ENV"); env != "" {
+		return "currency:8081"
+	} else {
+		return "localhost:8081"
+	}
+}
+
 func main() {
 
 	log := hclog.Default()
 	log.SetLevel(hclog.Trace)
 
-	log.Info(runtime.GOOS)
+	log.Info("Starting product-api server", "OS", runtime.GOOS)
 
 	v := data.NewValidation()
 
+	currency_host := getEnv()
 	// Add grpc client
-	conn, err := grpc.Dial("localhost:8082", grpc.WithInsecure())
+	log.Info("Initializing gRPC client", "host", currency_host)
+	conn, err := grpc.Dial(currency_host, grpc.WithInsecure())
 
 	if err != nil {
 		panic(err)
@@ -79,7 +89,7 @@ func main() {
 	ch := goHandlers.CORS(goHandlers.AllowedOrigins([]string{"*"}))
 
 	s := &http.Server{
-		Addr:         "localhost:8080",
+		Addr:         ":8080",
 		Handler:      ch(router),
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
