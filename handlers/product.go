@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	dataimport "github.com/gokusayon/products-api/data"
-	queue "github.com/gokusayon/products-api/queue"
+	queue "github.com/gokusayon/rabbitmq/queue"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
 )
@@ -25,11 +25,11 @@ type Products struct {
 	log        hclog.Logger
 	validate   *dataimport.Validation
 	productsDB *dataimport.ProductsDB
-	queue      *queue.ProductQueue
+	queue      *queue.RabbitMessageQueue
 }
 
 // NewProducts returns a @Products handler
-func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB, q *queue.ProductQueue) *Products {
+func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB, q *queue.RabbitMessageQueue) *Products {
 	return &Products{log, v, productsDB, q}
 }
 

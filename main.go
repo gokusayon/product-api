@@ -12,7 +12,10 @@ import (
 	protos "github.com/gokusayon/currency/protos/currency"
 	data "github.com/gokusayon/products-api/data"
 	"github.com/gokusayon/products-api/handlers"
-	queue "github.com/gokusayon/products-api/queue"
+
+	// queue "github.com/gokusayon/products-api/queue"
+	config "github.com/gokusayon/rabbitmq/config"
+	queue "github.com/gokusayon/rabbitmq/queue"
 	goHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
@@ -49,11 +52,11 @@ func main() {
 	cc := protos.NewCurrencyClient(conn)
 	productsDB := data.NewProductsDB(log, cc)
 
-	config := queue.NewConfig()
-	q := queue.NewProductQueue(log, *config)
+	c := config.NewRabbitConfig()
+	rbmq := queue.NewRabbitMessageQueue(log, &c)
 
 	// Create the handlers
-	ph := handlers.NewProducts(log, v, productsDB, q)
+	ph := handlers.NewProducts(log, v, productsDB, rbmq)
 
 	// Create a new subrouter for add prefic and adding filter for response type
 	router := mux.NewRouter()
@@ -93,7 +96,8 @@ func main() {
 	ch := goHandlers.CORS(goHandlers.AllowedOrigins([]string{"*"}))
 
 	// Publish messages to queue
-	postRouter.HandleFunc("/publish", ph.PublishMessages)
+	rabbitRouter := sm.Methods(http.MethodPost).Subrouter()
+	rabbitRouter.HandleFunc("/publish/{q:[a-z]+}", ph.PublishMessages)
 
 	s := &http.Server{
 		Addr:         ":8080",
