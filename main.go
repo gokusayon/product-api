@@ -12,6 +12,7 @@ import (
 	protos "github.com/gokusayon/currency/protos/currency"
 	data "github.com/gokusayon/products-api/data"
 	"github.com/gokusayon/products-api/handlers"
+	queue "github.com/gokusayon/products-api/queue"
 	goHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
@@ -48,8 +49,11 @@ func main() {
 	cc := protos.NewCurrencyClient(conn)
 	productsDB := data.NewProductsDB(log, cc)
 
+	config := queue.NewConfig()
+	q := queue.NewProductQueue(log, *config)
+
 	// Create the handlers
-	ph := handlers.NewProducts(log, v, productsDB)
+	ph := handlers.NewProducts(log, v, productsDB, q)
 
 	// Create a new subrouter for add prefic and adding filter for response type
 	router := mux.NewRouter()
@@ -87,6 +91,9 @@ func main() {
 
 	// CORS
 	ch := goHandlers.CORS(goHandlers.AllowedOrigins([]string{"*"}))
+
+	// Publish messages to queue
+	postRouter.HandleFunc("/publish", ph.PublishMessages)
 
 	s := &http.Server{
 		Addr:         ":8080",

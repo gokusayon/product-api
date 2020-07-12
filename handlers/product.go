@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	dataimport "github.com/gokusayon/products-api/data"
-	"github.com/gorilla/mux"
-	"github.com/hashicorp/go-hclog"
 	"net/http"
 	"strconv"
+
+	dataimport "github.com/gokusayon/products-api/data"
+	queue "github.com/gokusayon/products-api/queue"
+	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-hclog"
 )
 
 // GenericError is a generic error message returned by a server
@@ -23,11 +25,12 @@ type Products struct {
 	log        hclog.Logger
 	validate   *dataimport.Validation
 	productsDB *dataimport.ProductsDB
+	queue      *queue.ProductQueue
 }
 
 // NewProducts returns a @Products handler
-func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB) *Products {
-	return &Products{log, v, productsDB}
+func NewProducts(log hclog.Logger, v *dataimport.Validation, productsDB *dataimport.ProductsDB, q *queue.ProductQueue) *Products {
+	return &Products{log, v, productsDB, q}
 }
 
 // A KeyProduct used for product object in context
